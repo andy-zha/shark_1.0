@@ -59,6 +59,7 @@ void capture::capture_packet()
 {
 	while(true)	
 	{
+
 		//错误信息数组    
 		char errbuf[1024];    
 		//打开网络设备 
@@ -127,6 +128,7 @@ void capture::read_packet()
 			//读取文件名	
 			filename = names.front();
 			char *pfile = const_cast<char*>(filename.c_str());
+			u_file_totals++;
 
 			//构建删除文件名指令
 			char cmd[100];
@@ -136,6 +138,7 @@ void capture::read_packet()
 			FILE *fp = fopen(pfile, "r");
 			if (NULL== fp)
 			{
+			    u_read_file_fail++;
 				continue;    
 			}
 
@@ -143,6 +146,7 @@ void capture::read_packet()
 			ns_pcap::file_header fileheader;
 			if (fread((void*)&fileheader, 1, sizeof(fileheader), fp) <= 0)
 			{
+			    u_read_file_fail++;
 				continue;    
 			}
 			//魔术数异常标记
@@ -166,6 +170,7 @@ void capture::read_packet()
 			//异常魔术数
 			if (bInvalidMagic)
 			{
+			    u_abnormal_file++;
 				std::cout<<"Invalid Magic!"<<std::endl;
 				continue;
 			}
@@ -173,6 +178,9 @@ void capture::read_packet()
 
 			while (true)
 			{
+			    //日志统计
+			    u_pkt_totals++;
+
 				//构建包体结构
 				cell ce;
 				//获取链路层协议
@@ -182,6 +190,7 @@ void capture::read_packet()
 				ns_pcap::packet_header pkt_header;    
 				if (fread((void*)&pkt_header, 1, sizeof(pkt_header), fp) <= 0)	    
 				{
+				    u_read_pkt_fail++;
 					break;	
 				}
 
@@ -190,6 +199,7 @@ void capture::read_packet()
 				{
 					fseek(fp, pkt_header.caplen, SEEK_CUR);
 					printf("packet length over maximum processing length,ignore the packet!\n");
+					u_abnormal_pkt++;
 					continue;
 				}
 
@@ -197,8 +207,12 @@ void capture::read_packet()
 				char cap_content[ns_capture::cap_content_max_len];
 				if (fread((void*)cap_content, 1, pkt_header.caplen, fp) <= 0)
 				{
+				    u_read_pkt_fail++;
 					break;	
 				}
+
+                //日志统计
+                u_read_pkt_suc++;
 
 				//拷贝数据体
 				ce.p_str = (char*)_MEM_NEW_(pkt_header.caplen + 1);
@@ -206,6 +220,9 @@ void capture::read_packet()
 				_MEM_CPY(ce.p_str, cap_content, ce.u_len);
 				_MEM_ZERO_(ce.p_str, ce.u_len + 1, ce.u_len);
 			}
+
+			//日志统计
+			u_read_file_suc++;
 
 			//关闭文件
 			fclose(fp);
@@ -215,7 +232,9 @@ void capture::read_packet()
 
 			//删除首节点文件名
 			names.pop_front();
+			sleep(1);
 		}
+		sleep(1);
 	}
 }
 
@@ -291,4 +310,17 @@ void capture::setlinktype(uint32_t linktype, cell &ce)
 			ce.u_protocoltype = ns_protocol::em_unknow_protocol;
 			break;	    
 	}
+}
+
+void capture::write_log()
+{
+    char *p_log = (char*)_MEM_NEW_(1024);
+	snprintf(p_log, 1024, "CAPTURE MODULE STATISTICS:\n\
+	read_file_mode:\n\
+	read_file_totals:%d; read_file_suc:%d; read_file_fail:%d; abnormal_file_num:%d\n\
+	read_pkt_tptals:%d; read_pkt_suc:%d; read_pkt_fail:%d; abnormal_pkt_num:%d\n", 
+	u_file_totals, u_read_file_suc,	u_read_file_fail, u_abnormal_file, u_pkt_totals,
+	u_read_pkt_suc, u_read_pkt_fail, u_abnormal_pkt);
+
+	std::cout<<p_log<<std::endl;					   
 }

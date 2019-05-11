@@ -163,9 +163,54 @@ class capture
 		 */
 		void setlinktype(uint32_t linktype, cell &ce);
 
+		/**
+		 * @brief 写日志文件
+		 */
+		void write_log();
+
 	private:
 		/**
 		 * @brief 抓包模式
 		 */
 		ns_capture::_CAPTURE_MODE _mode;	
+
+		/**
+		 * @brief 读文件总数(日志信息)
+		 */
+		uint32_t u_file_totals;
+
+		/**
+		 * @brief 读文件失败总数(日志信息)
+		 */
+		uint32_t u_read_file_fail;
+
+		/**
+		 * @brief 读文件成功总数(日志信息)
+		 */
+		uint32_t u_read_file_suc;
+
+		/**
+		 * @brief 异常文件个数
+		 */
+		uint32_t u_abnormal_file;
+
+		/**
+		 * @brief 读包总数(日志信息)
+		 */
+		uint32_t u_pkt_totals;
+
+		/**
+		 * @brief 读包失败次数(日志信息)
+		 */
+		uint32_t u_read_pkt_fail;
+
+		/**
+		 * @brief 读包成功总数(日志信息)
+		 */
+		uint32_t u_read_pkt_suc;
+
+		/**
+		 * @brief 异常包个数
+		 */
+		uint32_t u_abnormal_pkt;
 };
