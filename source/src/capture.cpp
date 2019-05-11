@@ -24,6 +24,7 @@ capture::~capture()
 {
 }
 
+//抓包模块初始化
 int32_t capture::init(int16_t mode)
 {
     //设置抓包模式
@@ -50,11 +51,21 @@ int32_t capture::init(int16_t mode)
 	return RET::SUC;	
 }
 
+//抓包模块启动
 int32_t capture::start()
 {
+    if (RET::SUC != threadobject::createthreadfunc((threadobjectFunc)&capture::read_packet,
+				SCHED_FIFO, PRIORITY_NORMAL))
+	{
+	    printf("error:capture module create pthread failed!\n");
+		return RET::FAIL;
+	}
+
+    threadobject::start();
 	return RET::SUC;	
 }
 
+//网口抓包
 void capture::capture_packet()
 {
 	while(true)	
@@ -88,6 +99,7 @@ void capture::capture_packet()
 	}
 }
 
+//读包接口
 void capture::read_packet()
 {
 	DIR *dir;

@@ -50,4 +50,5 @@ link_directories (${LIB_PCAP_PATH}/lib)
 add_executable (shark ${SHARK_SRC_FILES} ${SHARK_COMMON_SRC_FILES})
 
 # 链接库
+target_link_libraries (shark PRIVATE pthread)
 target_link_libraries (shark PRIVATE pcap)

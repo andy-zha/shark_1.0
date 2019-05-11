@@ -12,6 +12,7 @@ Funcion List:
 #include "protocol.h"
 #include "pcap.h"
 #include "parserbase.h"
+#include "threadobject.h"
 
 namespace ns_capture
 {
@@ -85,7 +86,7 @@ namespace ns_capture
 	const int8_t localtalk_linktype = 114;
 }
 
-class capture
+class capture : public threadobject
 {
 	public:	
 		/**
