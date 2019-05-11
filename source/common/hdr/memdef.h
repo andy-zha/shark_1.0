@@ -24,42 +24,56 @@ namespace _MEM_SYS_
     {
         void *buf;
 
-	try
-	{
-	    buf = ::new char[size];
-	}
-	catch(...)
-	{
-	    throw std::bad_alloc();
+		try
+		{
+			buf = ::new char[size];
+		}
+		catch(...)
+		{
+			throw std::bad_alloc();
+		}
+
+		return buf;
 	}
 
-	return buf;
-    }
-
-    //释放内存 
-    static inline void free (void *buf)
-    {
-        delete [] (char*)buf;
-    }
+	//释放内存 
+	static inline void free (void *buf)
+	{
+		delete [] (char*)buf;
+	}
 
     //内存拷贝
-    static inline void memcpy(char *dest, char *src, uint32_t ulen)
+    static inline void memcpy(void *dest, void *src, uint32_t ulen)
     {
 #ifdef _DEBUG_VERSION_
-	assert(NULL != dest);
-	assert(NULL != src);
+		assert(NULL != dest);
+		assert(NULL != src);
 #endif
-	strncpy(dest, src, ulen);
+        while (ulen--)		
+		{
+		    *(char*)dest = *(char*)src;
+			dest = (char*)dest + 1;
+
+#ifdef _DEBUG_VERSION_
+			assert(NULL != dest);
+#endif
+
+			src = (char*)src + 1;
+
+#ifdef _DEBUG_VERSION_
+			assert(NULL != src);
+#endif
+		}
     }
 
     //封结尾函数
     static inline void memzero(char *str, uint32_t ulen, uint32_t position)
     {
 #ifdef _DEBUG_VERSION_
-	assert(NULL != str);
-	assert(position < ulen);
+		assert(NULL != str);
+		assert(position < ulen);
 #endif
-	str[position] = '\0';
+		str[position] = '\0';
     }
 }
 
@@ -67,9 +81,9 @@ namespace _MEM_SYS_
 static inline void free_ptr(char *p)
 {
     if (NULL != p){
-	_MEM_DEL_(p);
-	p = NULL;
-    }	    
+		_MEM_DEL_(p);
+		p = NULL;
+	}	    
 }
 
 #endif
