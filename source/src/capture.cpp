@@ -47,15 +47,39 @@ int32_t capture::init(int16_t mode)
 			_mode.to_ms = 0;
 			break;
 		}
+		default:
+		{
+			return RET::FAIL;
+		}
 	}
+
+	//初始化主缓冲区
+	uint64_t u_size = 12;
+	if (RET::SUC != _queue.init(u_size))
+	{
+		printf("error:capture init queue failed!\n");
+		return RET::FAIL;
+	}
+
 	return RET::SUC;	
 }
 
 //抓包模块启动
 int32_t capture::start()
 {
-    if (RET::SUC != threadobject::createthreadfunc((threadobjectFunc)&capture::read_packet,
-				SCHED_FIFO, PRIORITY_NORMAL))
+	int32_t i_ret = RET::FAIL;
+	if (ns_capture::em_read_capfile_mode == _mode.mode)
+	{
+		i_ret = threadobject::createthreadfunc((threadobjectFunc)&capture::read_packet,
+				SCHED_FIFO, PRIORITY_NORMAL);
+	}
+	else if (ns_capture::em_capture_from_wan == _mode.mode)
+	{
+		i_ret = threadobject::createthreadfunc((threadobjectFunc)&capture::capture_packet,
+				SCHED_FIFO, PRIORITY_NORMAL);
+	}
+
+	if (RET::SUC != i_ret)
 	{
 	    printf("error:capture module create pthread failed!\n");
 		return RET::FAIL;
@@ -68,7 +92,10 @@ int32_t capture::start()
 //网口抓包
 void capture::capture_packet()
 {
-	while(true)	
+	//线程启动
+	threadobject::getthreadpolicy("Capture");
+
+	while(m_run)	
 	{
 
 		//错误信息数组    
@@ -102,6 +129,9 @@ void capture::capture_packet()
 //读包接口
 void capture::read_packet()
 {
+	//线程启动
+	threadobject::getthreadpolicy("Capture");
+
 	DIR *dir;
 	std::list<std::string> names;
 	while (true)
@@ -194,7 +224,15 @@ void capture::read_packet()
 			    u_pkt_totals++;
 
 				//构建包体结构
-				cell ce;
+				cell *ce = NULL;
+				try
+				{
+					ce = new cell();
+				}
+				catch(std::bad_alloc)
+				{
+					continue;
+				}
 				//获取链路层协议
 				setlinktype(fileheader.LinkType, ce);
 
@@ -203,6 +241,10 @@ void capture::read_packet()
 				if (fread((void*)&pkt_header, 1, sizeof(pkt_header), fp) <= 0)	    
 				{
 				    u_read_pkt_fail++;
+					if (NULL == ce)
+					{
+						delete ce;
+					}
 					break;	
 				}
 
@@ -210,8 +252,12 @@ void capture::read_packet()
 				if (ns_capture::cap_content_max_len < pkt_header.caplen)
 				{
 					fseek(fp, pkt_header.caplen, SEEK_CUR);
-					printf("packet length over maximum processing length,ignore the packet!\n");
+					printf("packet length over max processing length,ignore the packet!\n");
 					u_abnormal_pkt++;
+					if (NULL == ce)
+					{
+						delete ce;
+					}
 					continue;
 				}
 
@@ -220,6 +266,10 @@ void capture::read_packet()
 				if (fread((void*)cap_content, 1, pkt_header.caplen, fp) <= 0)
 				{
 				    u_read_pkt_fail++;
+					if (NULL == ce)
+					{
+						delete ce;
+					}
 					break;	
 				}
 
@@ -227,10 +277,20 @@ void capture::read_packet()
                 u_read_pkt_suc++;
 
 				//拷贝数据体
-				ce.p_str = (char*)_MEM_NEW_(pkt_header.caplen + 1);
-				ce.u_len = pkt_header.caplen;
-				_MEM_CPY(ce.p_str, cap_content, ce.u_len);
-				_MEM_ZERO_(ce.p_str, ce.u_len + 1, ce.u_len);
+				ce->p_str = (char*)_MEM_NEW_(pkt_header.caplen + 1);
+				ce->u_len = pkt_header.caplen;
+				_MEM_CPY(ce->p_str, cap_content, ce->u_len);
+				_MEM_ZERO_(ce->p_str, ce->u_len + 1, ce->u_len);
+
+				//入队
+				if (RET::SUC != _queue.push(ce))
+				{
+					if (NULL != ce)
+					{
+						delete ce;
+						ce = NULL;
+					}
+				}
 			}
 
 			//日志统计
@@ -250,89 +310,98 @@ void capture::read_packet()
 	}
 }
 
-void capture::setlinktype(uint32_t linktype, cell &ce)
+//设置以太协议类型
+void capture::setlinktype(uint32_t linktype, cell *ce)
 {
 	switch (linktype)	
 	{
 	    //BSD loopback devices, except for later OpenBSD 
 		case ns_capture::bsd_linktype:    
-			ce.u_protocoltype = ns_protocol::em_bsd_protocol;
+			ce->u_protocoltype = ns_protocol::em_bsd_protocol;
 			break;
 		//Ethernet, and Linux loopback devices	
 		case ns_capture::eth_linktype:
-			ce.u_protocoltype = ns_protocol::em_ethernet_protocol;
+			ce->u_protocoltype = ns_protocol::em_ethernet_protocol;
 			break;
 		//802.5 Token Ring 	
 		case ns_capture::token_ring_linktype:
-		    ce.u_protocoltype = ns_protocol::em_token_protocol;
+		    ce->u_protocoltype = ns_protocol::em_token_protocol;
 			break;
 		//ARCnet	
 		case ns_capture::arcnet_linktype:
-		    ce.u_protocoltype = ns_protocol::em_arcnet_protocol;
+		    ce->u_protocoltype = ns_protocol::em_arcnet_protocol;
 			break;
 		//SLIP	
 		case ns_capture::slip_linktype:
-		    ce.u_protocoltype = ns_protocol::em_slip_protocol;
+		    ce->u_protocoltype = ns_protocol::em_slip_protocol;
 			break;
 		//PPP 	
 		case ns_capture::ppp_linktype:
-		    ce.u_protocoltype = ns_protocol::em_ppp_protocol;
+		    ce->u_protocoltype = ns_protocol::em_ppp_protocol;
 			break;
 		//FDDI	
 		case ns_capture::fddi_linktype:
-		    ce.u_protocoltype = ns_protocol::em_fddi_protocol;
+		    ce->u_protocoltype = ns_protocol::em_fddi_protocol;
 			break;
 		//LLC/SNAP-encapsulated ATM 	
 		case ns_capture::llc_linktype:
-		    ce.u_protocoltype = ns_protocol::em_llc_protocol;
+		    ce->u_protocoltype = ns_protocol::em_llc_protocol;
 			break;
 		//“raw IP”, with no link	
 		case ns_capture::rawip_linktype:
-		    ce.u_protocoltype = ns_protocol::em_rawip_protocol;
+		    ce->u_protocoltype = ns_protocol::em_rawip_protocol;
 			break;
 		//BSD/OS SLIP	
 		case ns_capture::bsd_slip_linktype:
-		    ce.u_protocoltype = ns_protocol::em_bsd_slip_protocol;
+		    ce->u_protocoltype = ns_protocol::em_bsd_slip_protocol;
 			break;
 		//BSD/OS PPP	
 		case ns_capture::bsd_ppp_linktype:
-		    ce.u_protocoltype = ns_protocol::em_bsd_ppp_protocol;
+		    ce->u_protocoltype = ns_protocol::em_bsd_ppp_protocol;
 			break;
 		//Cisco HDLC 	
 		case ns_capture::cisco_linktype:
-		    ce.u_protocoltype = ns_protocol::em_cisco_protocol;
+		    ce->u_protocoltype = ns_protocol::em_cisco_protocol;
 			break;
 		//802.11 	
 		case ns_capture::eleven_linktype:
-		    ce.u_protocoltype = ns_protocol::em_eleven_protocol;
+		    ce->u_protocoltype = ns_protocol::em_eleven_protocol;
 			break;
 		//later OpenBSD loopback devices (with the AF_value in network byte order) 	
 		case ns_capture::openbsd_linktype:
-		    ce.u_protocoltype = ns_protocol::em_openbsd_protocol;
+		    ce->u_protocoltype = ns_protocol::em_openbsd_protocol;
 			break;
 		//special Linux “cooked” capture 	
 		case ns_capture::linux_cooked_linktype:
-		    ce.u_protocoltype = ns_protocol::em_linux_cooked_protocol;
+		    ce->u_protocoltype = ns_protocol::em_linux_cooked_protocol;
 			break;
         //LocalTalk 
 		case ns_capture::localtalk_linktype:
-		    ce.u_protocoltype = ns_protocol::em_localtalk_protocol;
+		    ce->u_protocoltype = ns_protocol::em_localtalk_protocol;
 			break;
 		default:
-			ce.u_protocoltype = ns_protocol::em_unknow_protocol;
+			ce->u_protocoltype = ns_protocol::em_unknow_protocol;
 			break;	    
 	}
 }
 
+//获取主缓冲区
+recyclequeue<cell> capture::get_queue()
+{
+	return _queue;
+}
+
+//写日志函数
 void capture::write_log()
 {
+	uint64_t u_push_fail = _queue.lost();
     char *p_log = (char*)_MEM_NEW_(1024);
 	snprintf(p_log, 1024, "CAPTURE MODULE STATISTICS:\n\
 	read_file_mode:\n\
 	read_file_totals:%d; read_file_suc:%d; read_file_fail:%d; abnormal_file_num:%d\n\
-	read_pkt_tptals:%d; read_pkt_suc:%d; read_pkt_fail:%d; abnormal_pkt_num:%d\n", 
-	u_file_totals, u_read_file_suc,	u_read_file_fail, u_abnormal_file, u_pkt_totals,
-	u_read_pkt_suc, u_read_pkt_fail, u_abnormal_pkt);
+	read_pkt_tptals:%d; read_pkt_suc:%d; read_pkt_fail:%d; abnormal_pkt_num:%d\n\
+	push_queue_fail:%d", u_file_totals, u_read_file_suc, u_read_file_fail, u_abnormal_file,
+   	u_pkt_totals, u_read_pkt_suc, u_read_pkt_fail, u_abnormal_pkt, u_push_fail);
 
 	std::cout<<p_log<<std::endl;					   
 }

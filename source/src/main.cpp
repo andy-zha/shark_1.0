@@ -5,11 +5,72 @@
  Description：主程序入口
  Funcion List: 
 *****************************************************/
+#include <unistd.h>
 #include "capture.h"
+#include "processor.h"
 
-int32_t main()
+void print_usage()
 {
-    capture::getinstance().read_packet();
+}
+
+int32_t main(int argc, char **argv)
+{
+	if (argc <= 1)
+	{
+		print_usage();
+		return RET::FAIL;
+	}
+
+	int32_t ch = -1;
+	int16_t i_mode = -1;
+	//读取程序启动模式
+	while ((ch = getopt(argc, argv, "fchp:")) != -1)
+	{
+		switch(ch)
+		{
+			case 'f':
+				i_mode = ns_capture::em_read_capfile_mode;
+				break;
+			case 'c':
+			    break;
+			default:
+				print_usage();
+			    break;	
+		}
+	}
+
+	//主处理初始化
+	if (RET::SUC != processor::getinstance().init())
+	{
+		printf("error:processor init failed!\n");
+		return RET::FAIL;
+	}
+
+	//抓包模块初始化
+	if (RET::SUC != capture::getinstance().init(i_mode))
+	{
+		printf("error:capture module init failed!\n");
+		return RET::FAIL;
+	}
+
+	//主处理启动
+	if (RET::SUC != processor::getinstance().start())
+	{
+		printf("error:processor start failed!\n");
+		return RET::FAIL;
+	}
+
+	//抓包模式启动
+	if (RET::SUC != capture::getinstance().start())
+	{
+		printf("error:capture module start failed!\n");
+		return RET::FAIL;
+	}
+
+	while (true)
+	{
+		sleep(1);
+	}
 
     return RET::SUC;
 }

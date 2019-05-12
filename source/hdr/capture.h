@@ -5,6 +5,8 @@ Author: Andy  Version:0.1 Date: 2019-05-04 14:29
 Description：抓包模块头文件
 Funcion List: 
 *****************************************************/
+#ifndef _CAPTURE_H_
+#define _CAPTURE_H_
 
 #include "asmlib.h"
 #include "memdef.h"
@@ -13,6 +15,7 @@ Funcion List:
 #include "pcap.h"
 #include "parserbase.h"
 #include "threadobject.h"
+#include "recyclequeue.h"
 
 namespace ns_capture
 {
@@ -129,8 +132,8 @@ class capture : public threadobject
 		 */
 		static capture& getinstance()
 		{
-			static capture value;
-			return value;
+			static capture instance;
+			return instance;
 		}
 
 		/**
@@ -162,7 +165,14 @@ class capture : public threadobject
 		 *
 		 * @prame linktype 文件头协议值;ce 包体传递
 		 */
-		void setlinktype(uint32_t linktype, cell &ce);
+		void setlinktype(uint32_t linktype, cell *ce);
+
+		/**
+		 * @brief 获取主缓冲区
+		 *
+		 * return 主缓冲区地址
+		 */
+		recyclequeue<cell> get_queue();
 
 		/**
 		 * @brief 写日志文件
@@ -174,6 +184,11 @@ class capture : public threadobject
 		 * @brief 抓包模式
 		 */
 		ns_capture::_CAPTURE_MODE _mode;	
+
+		/**
+		 * @brief 主缓冲区
+		 */
+		recyclequeue<cell> _queue;
 
 		/**
 		 * @brief 读文件总数(日志信息)
@@ -215,3 +230,5 @@ class capture : public threadobject
 		 */
 		uint32_t u_abnormal_pkt;
 };
+
+#endif
