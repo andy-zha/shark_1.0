@@ -9,12 +9,17 @@
 #include "capture.h"
 #include "processor.h"
 
+#ifdef _GTEST_
+#include "gtest/gtest.h"
+#endif
+
 void print_usage()
 {
 }
 
 int32_t main(int argc, char **argv)
 {
+#ifndef _GTEST_
 	if (argc <= 1)
 	{
 		print_usage();
@@ -73,4 +78,11 @@ int32_t main(int argc, char **argv)
 	}
 
     return RET::SUC;
+#endif
+
+#ifdef _GTEST_
+	printf("Running main() from %s\n", __FILE__);
+	testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
+#endif
 }
