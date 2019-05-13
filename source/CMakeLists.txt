@@ -22,13 +22,14 @@ set (SHARK_PATCH_VERSION 0)
 
 # 设置编译选项及链接库路径
 if (CMAKE_BUILD_RPATH AND (CMAKE_BUILD_TYPE MATCHES DEBUG)) 
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g") 
-	set (LIB_PCAP_PATH "${CMAKE_BUILD_RPATH}/libpcap")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g -fprofile-arcs -ftest-coverage") 
+	set (LIB_PCAP_PATH "${CMAKE_BUILD_RPATH}/Utils/libpcap")
+	set (LIB_GTEST_PATH "CMAKE_BUILD_RPATH/Env/libgtest")
 endif()	
 
 if (CMAKE_BUILD_RPATH AND (CMAKE_BUILD_TYPE MATCHES RELEASE))
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g")
-	set (LIB_PCAP_PATH "${CMAKE_BUILD_RPATH}/libpcap")
+	set (LIB_PCAP_PATH "${CMAKE_BUILD_RPATH}/Utils/libpcap")
 endif()
 
 # 目录下的所有源文件
@@ -52,3 +53,9 @@ add_executable (shark ${SHARK_SRC_FILES} ${SHARK_COMMON_SRC_FILES})
 # 链接库
 target_link_libraries (shark PRIVATE pthread)
 target_link_libraries (shark PRIVATE pcap)
+
+# debug版本链接gtest库
+if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+    link_directories(${LIB_GTEST_PATH}/lib)
+    target_link_libraries(shark PRIVATE gtest)
+endif()
