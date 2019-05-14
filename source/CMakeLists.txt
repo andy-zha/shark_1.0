@@ -22,9 +22,8 @@ set (SHARK_PATCH_VERSION 0)
 
 # 设置编译选项及链接库路径
 if (CMAKE_BUILD_RPATH AND (CMAKE_BUILD_TYPE MATCHES DEBUG)) 
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g -fprofile-arcs -ftest-coverage") 
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g") 
 	set (LIB_PCAP_PATH "${CMAKE_BUILD_RPATH}/Utils/libpcap")
-	set (LIB_GTEST_PATH "${CMAKE_BUILD_RPATH}/Env/gtest")
 endif()	
 
 if (CMAKE_BUILD_RPATH AND (CMAKE_BUILD_TYPE MATCHES RELEASE))
@@ -32,10 +31,16 @@ if (CMAKE_BUILD_RPATH AND (CMAKE_BUILD_TYPE MATCHES RELEASE))
 	set (LIB_PCAP_PATH "${CMAKE_BUILD_RPATH}/Utils/libpcap")
 endif()
 
+if (CMAKE_BUILD_RPATH AND (CMAKE_BUILD_TYPE MATCHES GTEST))
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g -fprofile-arcs -ftest-coverage") 
+	set (LIB_PCAP_PATH "${CMAKE_BUILD_RPATH}/Utils/libpcap")
+	set (LIB_GTEST_PATH "${CMAKE_BUILD_RPATH}/Env/gtest")
+endif()
+
 # 目录下的所有源文件
 aux_source_directory (src SHARK_SRC_FILES)
 aux_source_directory (common/src SHARK_COMMON_SRC_FILES)
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+if (CMAKE_BUILD_TYPE MATCHES GTEST)
     aux_source_directory (gtest CAPTURE_GTEST_FILES)
 endif()
 
@@ -46,7 +51,7 @@ include_directories (${PROJECT_SOURCE_DIR}/common/hdr)
 # 链接库头文件目录
 include_directories (${LIB_PCAP_PATH}/include)
 include_directories (${LIB_PCAP_PATH}/include/pcap)
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+if (CMAKE_BUILD_TYPE MATCHES GTEST)
     include_directories (${LIB_GTEST_PATH}/include)
 endif()
 
@@ -55,17 +60,22 @@ link_directories (${LIB_PCAP_PATH}/lib)
 link_directories(${LIB_GTEST_PATH}/lib)
 
 # 指定生成目标
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+if (CMAKE_BUILD_TYPE MATCHES GTEST)
     add_executable (gtest_shark ${SHARK_SRC_FILES} ${SHARK_COMMON_SRC_FILES} ${CAPTURE_GTEST_FILES})
 endif()
-add_executable (shark ${SHARK_SRC_FILES} ${SHARK_COMMON_SRC_FILES})
+
+if (NOT (CMAKE_BUILD_TYPE MATCHES GTEST))
+    add_executable (shark ${SHARK_SRC_FILES} ${SHARK_COMMON_SRC_FILES})
+endif()
 
 # 链接库
-target_link_libraries (shark PRIVATE pthread)
-target_link_libraries (shark PRIVATE pcap)
+if (NOT (CMAKE_BUILD_TYPE MATCHES GTEST))
+	target_link_libraries (shark PRIVATE pthread)
+	target_link_libraries (shark PRIVATE pcap)
+endif()
 
 # debug版本链接gtest库
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+if (CMAKE_BUILD_TYPE MATCHES GTEST)
 	target_link_libraries (gtest_shark PRIVATE pthread)
     target_link_libraries(gtest_shark PRIVATE gtest)
 	target_link_libraries (gtest_shark PRIVATE pcap)

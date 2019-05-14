@@ -9,6 +9,8 @@
 #include "capture.h"
 #include "processor.h"
 
+#define _GTEST_
+
 #ifdef _GTEST_
 #include "gtest/gtest.h"
 #endif

@@ -7,7 +7,7 @@ libpcap
 rm -rf build
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_BUILD_RPATH=/opt/PTIDE/Utils ..
+cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_BUILD_RPATH=/opt/PTIDE ..
 make
 ```
 
@@ -16,6 +16,15 @@ make
 rm -rf build
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_BUILD_RPATH=/opt/PTIDE/Utils ..
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_BUILD_RPATH=/opt/PTIDE ..
+make
+```
+
+## GTEST编译
+```
+rm -rf build
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=GTEST -DCMAKE_BUILD_RPATH=/opt/PTIDE ..
 make
 ```
