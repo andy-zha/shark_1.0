@@ -57,6 +57,30 @@ namespace ns_capture
 			{
 				free_ptr(dev);
 			}
+
+			/**
+			 * @brief 重载 内存分配
+			 *
+			 * @prame size 分配大小
+			 *
+			 * @return 分配地址
+			 */
+			static void * operator new(size_t size)
+			{
+				void *p = (void*)_MEM_NEW_(size);
+				return p;
+			}
+
+			/**
+			 * @brief 重载 内存释放
+			 *
+			 * @prame p 释放指针
+			 */
+			static void operator delete(void *p)
+			{
+				_MEM_DEL_(p);
+			}
+
 		public:
 			//抓包模式
 			int16_t mode;
@@ -172,7 +196,7 @@ class capture : public threadobject
 		 *
 		 * return 主缓冲区地址
 		 */
-		recyclequeue<cell> get_queue();
+		void get_queue(recyclequeue<cell> *&queue);
 
 		/**
 		 * @brief 写日志文件

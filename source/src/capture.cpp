@@ -386,9 +386,9 @@ void capture::setlinktype(uint32_t linktype, cell *ce)
 }
 
 //获取主缓冲区
-recyclequeue<cell> capture::get_queue()
+void capture::get_queue(recyclequeue<cell> *&queue)
 {
-	return _queue;
+	queue = &_queue;
 }
 
 //写日志函数

@@ -40,6 +40,11 @@ endif()
 # 目录下的所有源文件
 aux_source_directory (src SHARK_SRC_FILES)
 aux_source_directory (common/src SHARK_COMMON_SRC_FILES)
+
+#解析器源文件
+aux_source_directory(parser/ethernet2 ETH_PARSER_SRC_FILES)
+
+#gtest 源文件
 if (CMAKE_BUILD_TYPE MATCHES GTEST)
     aux_source_directory (gtest CAPTURE_GTEST_FILES)
 endif()
@@ -47,6 +52,9 @@ endif()
 # 头文件目录
 include_directories (${PROJECT_SOURCE_DIR}/hdr)
 include_directories (${PROJECT_SOURCE_DIR}/common/hdr)
+
+#解析器头文件
+include_directories (${PROJECT_SOURCE_DIR}/parser/ethernet2)
 
 # 链接库头文件目录
 include_directories (${LIB_PCAP_PATH}/include)
@@ -61,11 +69,16 @@ link_directories(${LIB_GTEST_PATH}/lib)
 
 # 指定生成目标
 if (CMAKE_BUILD_TYPE MATCHES GTEST)
-    add_executable (gtest_shark ${SHARK_SRC_FILES} ${SHARK_COMMON_SRC_FILES} ${CAPTURE_GTEST_FILES})
+    add_executable (gtest_shark ${SHARK_SRC_FILES} 
+			${SHARK_COMMON_SRC_FILES} 
+			${CAPTURE_GTEST_FILES}
+			${ETH_PARSER_SRC_FILES})
 endif()
 
 if (NOT (CMAKE_BUILD_TYPE MATCHES GTEST))
-    add_executable (shark ${SHARK_SRC_FILES} ${SHARK_COMMON_SRC_FILES})
+    add_executable (shark ${SHARK_SRC_FILES} 
+			${SHARK_COMMON_SRC_FILES}
+			${ETH_PARSER_SRC_FILES})
 endif()
 
 # 链接库

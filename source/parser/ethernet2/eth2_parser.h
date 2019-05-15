@@ -1,30 +1,30 @@
 /*****************************************************
 copyright (C), Anhui University of Tecnology
-File name：processor.h
-Author: Andy  Version:0.1 Date: 2019-05-12 18:40
-Description：
+File name：eth2_parser.h
+Author: Andy  Version:0.1 Date: 2019-05-04 14:29
+Description：eth2解析器头文件
 Funcion List: 
 *****************************************************/
-#ifndef _PROCESSOR_H_
-#define _PROCESSOR_H_
+#ifndef _ETH2_PARSER_H_
+#define _ETH2_PARSER_H_
 
-#include "threadobject.h"
-#include "capture.h"
+#include "asmlib.h"
+#include "memdef.h"
 #include "parserbase.h"
 
-class processor : public threadobject
+class eth2_parser : public parserbase
 {
-	public:
-		/**
-		 * @brief
+    public:
+	    /**
+		 * @brief 构造函数
 		 */
-		processor();
+	    eth2_parser();
 
 		/**
-		 * @brief
+		 * @brief 析构函数
 		 */
-		~processor();
-		
+		~eth2_parser();
+
 		/**
 		 * @brief 重载 内存分配
 		 *
@@ -49,18 +49,7 @@ class processor : public threadobject
 		}
 
 		/**
-		 * @brief 返回单例接口
-		 *
-		 * @return 返回单例地址
-		 */
-		static processor& getinstance()
-		{
-			static processor instance;
-			return instance;
-		}
-
-		/**
-		 * @brief 初始化函数
+		 * @brief 初始化接口
 		 *
 		 * @return RET::SUC 成功;RET::FAIL 失败
 		 */
@@ -72,11 +61,6 @@ class processor : public threadobject
 		 * @return RET::SUC 成功;RET::FAIL 失败
 		 */
 		int32_t start();
-
-		/**
-		 * @brief 线程处理函数
-		 */
-		void process();
 };
 
 #endif

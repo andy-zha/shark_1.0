@@ -7,6 +7,7 @@ Funcion List:
 *****************************************************/
 #include <unistd.h>
 #include "processor.h"
+#include "parsermgr.h"
 
 processor::processor()
 {
@@ -19,6 +20,13 @@ processor::~processor()
 //初始化接口
 int32_t processor::init()
 {
+    //解析器管理器初始化
+    if (RET::SUC != parsermgr::init())
+	{
+	    printf("error:parser manager init failed!\n");
+	    return RET::FAIL;
+	}
+
 	return RET::SUC;
 }
 
@@ -42,18 +50,25 @@ void processor::process()
 	threadobject::getthreadpolicy("Processor");
 
 	//获取主缓冲区
-	recyclequeue<cell> _queue = capture::getinstance().get_queue();
+	recyclequeue<cell> *_queue = NULL;
+	capture::getinstance().get_queue(_queue);
 
 	while (m_run) 
 	{
 		//pop出缓冲区
-		cell *ce = _queue.pop();
+		cell *ce = _queue->pop();
+
+        //结点为空不处理
 		if (NULL == ce)
 		{
 			continue;
 		}
 
-		std::cout<<ce->u_protocoltype<<std::endl;
-		sleep(1);
+        //释放指针
+		if (NULL != ce)
+		{
+		    delete ce;
+			ce = NULL;
+		}
 	}
 }

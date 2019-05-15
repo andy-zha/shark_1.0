@@ -111,8 +111,13 @@ class recyclequeue
 		int32_t push(Type *node)
 		{
 #ifndef _DEBUG_VERSION_
-			assert(NULL!= node);
+			assert(NULL != node);
 #endif
+            if (NULL == node)
+			{
+			    return RET::FAIL;
+			}
+
 			if (_Qread <= _Qwrite & _Qmask) 
 			{
 				_Qdata[_Qwrite] = node;
